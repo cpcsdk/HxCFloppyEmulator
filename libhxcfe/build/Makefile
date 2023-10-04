@@ -11,6 +11,14 @@ INCLUDES = -I$(BASEDIR)/ -I ../../libhxcadaptor/sources -I ../../build
 DEBUG ?= 0
 DEBUG_ASAN ?= 0
 
+ifeq ($(TARGET),)
+BMPTOH=bmptoh.exe
+MV=move
+else
+MV=MV
+BMPTOH=bmptoh
+endif
+
 ifeq ($(DEBUG), 1)
 	CFLAGS = -O0 $(INCLUDES) -Wall -g -DDEBUG
 	LDFLAGS = -shared
@@ -131,11 +139,11 @@ LIBS_OBJS = $(BASE) $(FS_SUPPORT) $(ADFLIBOBJ) $(ENCODING_SUPPORT) $(TRACK_FORMA
 
 all: SCRIPT_FILE $(BASEDIR)/licensetxt.h XML_FILES BMP_FILES $(EXEC)
 
-XML_FILES: bmptoh $(XML_DSKLAYOUT_OUTPUTS)
+XML_FILES: $(BMPTOH) $(XML_DSKLAYOUT_OUTPUTS)
 
-BMP_FILES: bmptoh $(BMP_DATAFILES_OUTPUTS)
+BMP_FILES: $(BMPTOH) $(BMP_DATAFILES_OUTPUTS)
 
-SCRIPT_FILE: bmptoh $(BASEDIR)/init_script.h
+SCRIPT_FILE: $(BMPTOH) $(BASEDIR)/init_script.h
 
 libhxcfe.dll: win32_libhxcfe_res.o $(LIBS_OBJS) ../../build/libhxcadaptor.a
 	$(CC) -o $@    $^ $(LDFLAGS)
@@ -151,7 +159,11 @@ ifeq ($(TARGET), Darwin)
 else
 	$(AR) r $@    $^
 endif
+ifeq ($(TARGET),)
+	copy $@ ..\..\build
+else
 	cp $@ ../../build
+endif
 
 libhxcfe.so: $(LIBS_OBJS) ../../build/libhxcadaptor.a
 	$(CC) -o $@    $^ $(LDFLAGS)
@@ -889,20 +901,36 @@ fat_table.o : $(BASEDIR)/thirdpartylibs/FATIOlib/fat_table.c
 fat_write.o : $(BASEDIR)/thirdpartylibs/FATIOlib/fat_write.c
 	$(CC) -o $@ -c $< $(CFLAGS)
 
-bmptoh:
+$(BMPTOH):
 	$(MAKE) CC=$(BUILD_CC) -C $(BASEDIR)/xml_disk/converttools/bmptob8
 
-$(BASEDIR)/xml_disk/DiskLayouts/%.h : $(BASEDIR)/xml_disk/DiskLayouts/xml_files/%.xml bmptoh
-	cd $(BASEDIR)/xml_disk/DiskLayouts/xml_files/ && ../../converttools/bmptob8/bmptoh $(basename $(notdir $<.xml)) -DATA && mv data_$(basename $(notdir $<))_xml.h ..
+$(BASEDIR)/xml_disk/DiskLayouts/%.h : $(BASEDIR)/xml_disk/DiskLayouts/xml_files/%.xml $(BMPTOH)
+ifeq ($(TARGET),)
+	cd $(BASEDIR)/xml_disk/DiskLayouts/xml_files/ && ..\..\converttools\bmptob8\$(BMPTOH) $(basename $(notdir $<.xml)) -DATA && $(MV) data_$(basename $(notdir $<))_xml.h ..
+else
+	cd $(BASEDIR)/xml_disk/DiskLayouts/xml_files/ && ../../converttools/bmptob8/$(BMPTOH) $(basename $(notdir $<.xml)) -DATA && mv data_$(basename $(notdir $<))_xml.h ..
+endif
 
-$(BASEDIR)/init_script.h : $(BASEDIR)/init.script bmptoh
-	cd $(BASEDIR)/ && $(BASEDIR)/xml_disk/converttools/bmptob8/bmptoh $(basename $(notdir $<.script)) -DATA && mv data_$(basename $(notdir $<))_script.h init_script.h
+$(BASEDIR)/init_script.h : $(BASEDIR)/init.script $(BMPTOH)
+ifeq ($(TARGET),)
+	cd $(BASEDIR)/ && .\xml_disk\converttools\bmptob8\$(BMPTOH) $(basename $(notdir $<.script)) -DATA && $(MV) data_$(basename $(notdir $<))_script.h init_script.h
+else
+	cd $(BASEDIR)/ && $(BASEDIR)/xml_disk/converttools/bmptob8/$(BMPTOH) $(basename $(notdir $<.script)) -DATA && mv data_$(basename $(notdir $<))_script.h init_script.h
+endif
 
-$(BASEDIR)/licensetxt.h : $(BASEDIR)/../COPYING_FULL bmptoh
-	cd $(BASEDIR) && $(BASEDIR)/xml_disk/converttools/bmptob8/bmptoh $< -DATA && mv data_$(basename $(notdir $<)).h licensetxt.h
+$(BASEDIR)/licensetxt.h : $(BASEDIR)/../COPYING_FULL $(BMPTOH)
+ifeq ($(TARGET),)
+	cd $(BASEDIR) && .\xml_disk\converttools\bmptob8\$(BMPTOH) $< -DATA && $(MV) data_$(basename $(notdir $<)).h licensetxt.h
+else
+	cd $(BASEDIR) && $(BASEDIR)/xml_disk/converttools/bmptob8/$(BMPTOH) $< -DATA && mv data_$(basename $(notdir $<)).h licensetxt.h
+endif
 
-$(BASEDIR)/misc/data/%.h: $(BASEDIR)/misc/data/%.bmp bmptoh
-	cd $(BASEDIR)/misc/data/ && ../../xml_disk/converttools/bmptob8/bmptoh $(basename $(notdir $<.bmp)) -BMP8P
+$(BASEDIR)/misc/data/%.h: $(BASEDIR)/misc/data/%.bmp $(BMPTOH)
+ifeq ($(TARGET),)
+	cd $(BASEDIR)/misc/data/ && ..\..\xml_disk\converttools\bmptob8\$(BMPTOH) $(basename $(notdir $<.bmp)) -BMP8P
+else
+	cd $(BASEDIR)/misc/data/ && ../../xml_disk/converttools/bmptob8/$(BMPTOH) $(basename $(notdir $<.bmp)) -BMP8P
+endif
 
 clean:
 	rm -rf *.o

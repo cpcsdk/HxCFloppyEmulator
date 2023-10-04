@@ -1,11 +1,18 @@
 CFLAGS = -O3 -I../../.. -Wall
 LDFLAGS =
+TARGET := $(shell uname)
 
-EXEC=bmptoh
+
+EXEC=bmptoh.exe
+ifeq ($(TARGET), Linux)
+	CFLAGS += -fPIC -Wl,-Map,foo.map
+	LDFLAGS += -lc -lm  -ldl
+	EXEC=bmptoh
+endif
 
 all: $(EXEC)
 
-bmptoh: bmptoh.o lzw.o pack.o rle.o
+bmptoh.exe: bmptoh.o lzw.o pack.o rle.o
 	$(CC) -o $@    $^ $(LDFLAGS)
 
 bmptoh.o: bmptoh.c
