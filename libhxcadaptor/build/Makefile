@@ -63,7 +63,11 @@ ifeq ($(TARGET), Darwin)
 else
 	$(AR) r $@    $^
 endif
+ifeq ($(TARGET),)
+	copy $@ ..\..\build
+else
 	cp $@ ../../build
+endif
 
 libhxcadaptor.o: $(BASEDIR)/libhxcadaptor.c
 	$(CC) -o $@ -c $< $(CFLAGS)
