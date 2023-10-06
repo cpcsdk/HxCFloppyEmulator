@@ -3,12 +3,15 @@ LDFLAGS =
 TARGET := $(shell uname)
 
 CFLAGS += -fPIC -Wl,-Map,foo.map
-LDFLAGS += -lc -lm  -ldl
 EXEC=bmptoh
 
 ifeq ($(TARGET),)
 EXEC=bmptoh.exe
+LDFLAGS += -lm  -ldl
+else
+LDFLAGS += -lc -lm  -ldl
 endif
+
 
 
 all: $(EXEC)
