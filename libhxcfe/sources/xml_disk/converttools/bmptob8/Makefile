@@ -7,7 +7,7 @@ EXEC=bmptoh
 
 ifeq ($(TARGET),)
 EXEC=bmptoh.exe
-LDFLAGS += -lm  -ldl
+LDFLAGS += -lm 
 else
 LDFLAGS += -lc -lm  -ldl
 endif
